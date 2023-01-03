@@ -18,7 +18,8 @@ for filepath in filepaths:
     total_row = ['' for x in range(empty_cell)]
     total_row.append(df['total_price'].sum())
     df.loc[len(df.index)] = total_row
-    column_names = [(x.replace('_', ' ')).title() for x in df.columns.values]
+    column_names = ['Product ID', 'Product Name', 'Amount',
+                    'Price per Unit', 'Total Price']
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font(family='Times', size=16, style='b')
@@ -26,11 +27,12 @@ for filepath in filepaths:
     pdf.cell(w=50, h=8, ln=1, txt=f'Date {invoice_date}')
     pdf.ln()
 
-    top_y = 70
-    width = 80
+    top = pdf.y
+    offset = pdf.x + 50
+    cell_w = 50
     for name in column_names:
-        pdf.multi_cell(top_y, 12, name, border=1,align='L')
-        top_y = 70
-        width = 80
+        pdf.multi_cell(cell_w, 12, name, border=1,align='L')
+        pdf.y = top
+        pdf.x = offset
         
     pdf.output(f'{invoice_nr}-{invoice_date}.pdf')
