@@ -1,43 +1,57 @@
 from fpdf import FPDF
+import pandas as pd
 
-headers = ['Product ID', 'Product Name', 'Amount',
-           'Price per Unit', 'Total Price']
+df = pd.read_excel('invoices/10001-2023.1.18.xlsx')
+
+df = df.rename(columns={'product_id': 'Product ID', 'product_name': 'Product Name',
+                        'amount_purchased': 'Amount', 'price_per_unit': 'Price per Unit',
+                        'total_price': 'Total Price'})
+
+empty_cells = df.shape[1] - 1
+total_row = ['' for x in range(empty_cells)]
+total_row.append(df['Total Price'].sum())
+df.loc[len(df.index)] = total_row
+
 pdf = FPDF(orientation='P', unit='mm', format='A4')
 
 pdf.add_page()
-pdf.set_font('Arial','B',12)
 
-# top = pdf.y
-# offset = pdf.x + 50
-
-# for header in headers:
-# offset = pdf.x + 50
-# print(top, offset)
-# print(pdf.y, pdf.x)
 top = pdf.y
 offset = pdf.x 
-cell_w = 35
-i = 1
-for header in headers:
-    pdf.multi_cell(w=cell_w, h=10, txt=header, border=1, align='L')
-# print(pdf.y, pdf.x)
-    step = cell_w * i
-    pdf.y = top
-    pdf.x = offset + step
-    i += 1
-# print(pdf.y, pdf.x)
-# pdf.multi_cell(w=cell_w, h=10, txt=headers[1], border=1, align='L')
-# print(pdf.y, pdf.x)
-# pdf.y = top
-# pdf.x = offset + 100
-# pdf.multi_cell(w=cell_w, h=10, txt=headers[2], border=1, align='L')
-# pdf.multi_cell(w=50, h=10, txt=headers[1], border=1, align='L')
-# print(pdf.y, pdf.x)
-# print(top, offset)
-# pdf.multi_cell(100,10,headers[1],1,0)
 
-# pdf.multi_cell(100,10,'This cell needs to beside the other',1,0)
+# Table Header
+pdf.set_font('Arial', 'B', 12)
+for header in df:
+    cell_w = 70 if header == 'Product Name' else 30
+    pdf.multi_cell(w=cell_w, h=10, txt=header, border=1, align='L')
+    pdf.y = top
+    offset += cell_w
+    pdf.x = offset
+
+# Table content
+pdf.set_font('Arial', '', 10)
+for row in df.values[:2]:
+    pdf.y += 10 
+    pdf.x = 10
+    top = pdf.y
+    offset = pdf.x 
+    for item in row:
+        cell_w = 70 if len(str(item)) >= 8 else 30
+        pdf.multi_cell(w=cell_w, h=10, txt=str(item), border=1, align='L')
+        pdf.y = top
+        offset += cell_w
+        pdf.x = offset
+
+# Table footer
+pdf.y += 10 
+pdf.x = 10
+top = pdf.y
+offset = pdf.x 
+for index, row in enumerate(df.values[2]):
+    cell_w = 70 if index == 1 else 30
+    pdf.multi_cell(w=cell_w, h=10, txt=str(row), border=1, align='L')
+    pdf.y = top
+    offset += cell_w
+    pdf.x = offset
 
 pdf.output('tuto1.pdf','F')
-
-# webbrowser.open_new('tuto1.pdf')
