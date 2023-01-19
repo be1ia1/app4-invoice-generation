@@ -1,74 +1,57 @@
-import glob
-# import os
 import pandas as pd
 from fpdf import FPDF
+
+import glob
 from pathlib import Path
 
 filepaths = glob.glob('invoices/*.xlsx')
 
 for filepath in filepaths:
-    df = pd.read_excel(filepath, sheet_name='Sheet 1')
-    # rename headers
-    df = df.rename(columns={'product_id': 'Product ID', 'product_name': 'Product Name',
-                            'amount_purchased': 'Amount', 'price_per_unit': 'Price per Unit',
-                            'total_price': 'Total Price'})
-    # get invoice number and date
-    ## invoice_number = (os.path.basename(filepath)).split('-')[0]
     filename = Path(filepath).stem
-    invoice_number, invoice_date = filename.split('-')
-    ## invoice_date = (os.path.basename(filepath)).split('-')[1][:-5]
-    # add row with calculated total price 
-    empty_cells = df.shape[1] - 1
-    total_row = ['' for x in range(empty_cells)]
-    total_row.append(df['Total Price'].sum())
-    df.loc[len(df.index)] = total_row
-    # start creating pdf document
+    invoice_nr, invoice_date = filename.split('-')
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font(family='Times', size=16, style='b')
-    pdf.cell(w=50, h=8, ln=1, txt=f'Invoice nr. {invoice_number}')
-    pdf.cell(w=50, h=8, ln=1, txt=f'Date {invoice_date}')
-    pdf.ln()
+    pdf.cell(w=50, h=10, txt=f'Invoice nr. {invoice_nr}', ln=1)
+    pdf.cell(w=50, h=10, txt=f'Date {invoice_date}', ln=1)
 
-    top = pdf.y
-    offset = pdf.x 
+    df = pd.read_excel(filepath, sheet_name='Sheet 1')
+    df = df.rename(columns={'product_id': 'Product ID', 'product_name': 'Product Name',
+                            'amount_purchased': 'Amount', 'price_per_unit': 'Price per Unit',
+                            'total_price': 'Total Price'})
+    
+    # Add footer to df
+    empty_cells = df.shape[1] - 1
+    total_row = ['' for x in range(empty_cells)]
+    total_price = df['Total Price'].sum()
+    total_row.append(total_price)
+    df.loc[len(df.index)] = total_row
 
-    # Table Header
-    pdf.set_font('Arial', 'B', 12)
-    for header in df:
-        cell_w = 70 if header == 'Product Name' else 30
-        pdf.multi_cell(w=cell_w, h=10, txt=header, border=1, align='L')
-        pdf.y = top
-        offset += cell_w
-        pdf.x = offset
+    # Table header
+    pdf.set_font(family='Times', style='b', size=14)
+    columns = df.columns
+    pdf.cell(w=30, h=10, txt=columns[0], border=1)
+    pdf.cell(w=70, h=10, txt=columns[1], border=1)
+    pdf.cell(w=30, h=10, txt=columns[2], border=1)
+    pdf.cell(w=30, h=10, txt=columns[3], border=1)
+    pdf.cell(w=30, h=10, txt=columns[4], ln=1, border=1)
+
     # Table content
-    data_count = len([x for x in df.values if x[0]])
-    # print(data_count)
-    pdf.set_font('Arial', '', 10)
-    for row in df.values[:data_count]:
-        pdf.y += 10 
-        pdf.x = 10
-        top = pdf.y
-        offset = pdf.x 
-        for item in row:
-            cell_w = 70 if len(str(item)) >= 8 else 30
-            pdf.multi_cell(w=cell_w, h=10, txt=str(item), border=1, align='L')
-            pdf.y = top
-            offset += cell_w
-            pdf.x = offset
-    # Table footer
-    pdf.y += 10 
-    pdf.x = 10
-    top = pdf.y
-    offset = pdf.x 
-    for index, row in enumerate(df.values[data_count]):
-        cell_w = 70 if index == 1 else 30
-        pdf.multi_cell(w=cell_w, h=10, txt=str(row), border=1, align='L')
-        pdf.y = top
-        offset += cell_w
-        pdf.x = offset
-    pdf.ln(20)
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(w=190, h=10, ln=1, txt=f'The total due amount is {df["Total Price"].sum()} Euros.')
-    pdf.cell(w=190, h=10, ln=1, txt=f'PythonHow')
-    pdf.output(f'{invoice_number}-{invoice_date}.pdf')
+    pdf.set_font(family='Times', size=12)
+    for index, row in df.iterrows():
+        
+        pdf.cell(w=30, h=10, border=1, txt=str(row['Product ID']))
+        pdf.cell(w=70, h=10, border=1, txt=str(row['Product Name']))
+        pdf.cell(w=30, h=10, border=1, txt=str(row['Amount']))
+        pdf.cell(w=30, h=10, border=1, txt=str(row['Price per Unit']))
+        pdf.cell(w=30, h=10, border=1, txt=str(row['Total Price']), ln=1)
+
+    pdf.set_font(family='Times', style='b', size=14)
+    pdf.cell(w=30, h=8, txt=f'The total price is {total_price}', ln=1)
+    pdf.cell(w=25, h=8, txt='PythonHow')
+    pdf.image(w=10, name='pythonhow.png')
+    pdf.output(f'{invoice_nr}-{invoice_date}.pdf')
+
+
+# print(filepaths)
+
